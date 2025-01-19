@@ -65,9 +65,9 @@ def load_level(filename):
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         if tile_type == 'wall':
-            super().__init__(tiles_group, walls_group)
+            super().__init__(tiles_group, walls_group, all_sprites)
         else:
-            super().__init__(tiles_group)
+            super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
@@ -75,7 +75,7 @@ class Tile(pygame.sprite.Sprite):
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__(player_group)
+        super().__init__(player_group, all_sprites)
         self.image = player_image
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15, tile_height * pos_y + 5)
@@ -113,9 +113,24 @@ def generate_level(level):
     return new_player
 
 
+class Camera:
+    def __init__(self):
+        self.dx = 0
+        self.dy = 0
+
+    def apply(self, obj):
+        obj.rect.x += self.dx
+        obj.rect.y += self.dy
+
+    def update(self, target):
+        self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
+
+
 walls_group = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
+all_sprites = pygame.sprite.Group()
 player = None
 
 if __name__ == '__main__':
@@ -142,6 +157,7 @@ if __name__ == '__main__':
     running = True
     start_screen()
     player = generate_level(level)
+    camera = Camera()
     while running:
         screen.fill('black')
         for event in pygame.event.get():
@@ -149,6 +165,9 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.KEYDOWN:
                 player_group.update(event)
+        camera.update(player)
+        for sprite in all_sprites:
+            camera.apply(sprite)
         tiles_group.update()
         tiles_group.draw(screen)
         player_group.draw(screen)
