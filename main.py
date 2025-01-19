@@ -3,13 +3,10 @@ import os
 import pygame
 
 
-WIDTH = 500
-HEIGHT = 500
-
-
 def terminate():
     pygame.quit()
     sys.exit()
+
 
 def start_screen():
     intro_text = ['MARIO', 'правила:',
@@ -58,16 +55,11 @@ def load_image(name, colorkey=None):
 
 
 def load_level(filename):
-    filename = "data/" + filename
-    # читаем уровень, убирая символы перевода строки
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]
-
-    # и подсчитываем максимальную длину
     max_width = max(map(len, level_map))
-
-    # дополняем каждую строку пустыми клетками ('.')
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+    height = len(level_map)
+    return list(map(lambda x: x.ljust(max_width, '.'), level_map)), max_width, height
 
 
 class Tile(pygame.sprite.Sprite):
@@ -118,8 +110,7 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Player(x, y)
-    # вернем игрока, а также размер поля в клетках
-    return new_player, x, y
+    return new_player
 
 
 walls_group = pygame.sprite.Group()
@@ -127,11 +118,17 @@ tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 player = None
 
-
 if __name__ == '__main__':
+    map_file = "data/" + input('Введите имя файла с уровнем')
+    if not os.path.isfile(map_file):
+        print('Файл не найден')
+        sys.exit()
+    level, level_x, level_y = load_level(map_file)
+    tile_width = tile_height = 50
+
     pygame.init()
     pygame.display.set_caption('марио')
-    size = WIDTH, HEIGHT
+    size = WIDTH, HEIGHT = tile_width * level_x, tile_height * level_y
     screen = pygame.display.set_mode(size)
 
     tile_images = {
@@ -139,13 +136,12 @@ if __name__ == '__main__':
         'empty': load_image('grass.png')
     }
     player_image = load_image('mar.png')
-    tile_width = tile_height = 50
 
     clock = pygame.time.Clock()
     fps = 50
     running = True
     start_screen()
-    player, level_x, level_y = generate_level(load_level('map.txt'))
+    player = generate_level(level)
     while running:
         screen.fill('black')
         for event in pygame.event.get():
